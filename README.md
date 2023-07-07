@@ -6,6 +6,7 @@ Parallel runner
     {
       "binary": "service",
       "args": ["A", "B"],
+      "workingdir": "service",
       "envvars": [
         {
           "name": "TEST",
