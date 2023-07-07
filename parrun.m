@@ -107,7 +107,7 @@ int main() {
         __auto_type success = [task launchAndReturnError: &error];
         if (!success) {
             NSLog(@"failed to launch task: %@", [error localizedDescription]);
-            return 1;
+            terminate_tasks_and_exit(tasks, 1);
         }
         [tasks addObject: task];
         [NSThread detachNewThreadWithBlock: ^{
