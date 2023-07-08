@@ -43,6 +43,7 @@ void fsCallback(ConstFSEventStreamRef stream,
                     newTask.standardError = pipe;
                     newTask.executableURL = task.executableURL;
                     newTask.environment = task.environment;
+                    newTask.currentDirectoryURL = task.currentDirectoryURL;
                     NSError* error;
                     __auto_type success = [newTask launchAndReturnError: &error];
                     if (!success) {
@@ -90,6 +91,7 @@ int main() {
         NSLog(@"failed to parse config: %@", [error localizedDescription]);
         return 1;
     }
+    __auto_type currentDir = [[NSFileManager defaultManager] currentDirectoryPath];
     __auto_type tasks = [NSMutableArray array];
     for (NSDictionary* service in config[@"services"]) {
         NSString* binary = service[@"binary"];
@@ -104,6 +106,8 @@ int main() {
         task.standardError = pipe;
         task.executableURL = [NSURL fileURLWithPath: binary];
         task.environment = env;
+        __auto_type workingDir = [currentDir stringByAppendingPathComponent: service[@"workingdir"]];
+        task.currentDirectoryURL = [NSURL fileURLWithPath: workingDir];
         __auto_type success = [task launchAndReturnError: &error];
         if (!success) {
             NSLog(@"failed to launch task: %@", [error localizedDescription]);
@@ -121,7 +125,6 @@ int main() {
             NSLog(@"task output closed");
         }];
     }
-    __auto_type currentDir = [[NSFileManager defaultManager] currentDirectoryPath];
     __auto_type paths = [NSMutableArray array];
     for (NSDictionary* service in config[@"services"]) {
         NSString* binary = service[@"binary"];
