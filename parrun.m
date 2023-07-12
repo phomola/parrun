@@ -1,11 +1,5 @@
 #import <Foundation/Foundation.h>
 
-void (^sigintBlock)() = NULL;
-
-void sigintHandler(int _) {
-    dispatch_async(dispatch_get_main_queue(), sigintBlock);
-}
-
 void terminate_tasks_and_exit(NSArray* tasks, int ret) {
     __auto_type start = [NSDate date];
     for (NSTask* task in tasks) {
@@ -125,12 +119,14 @@ int main() {
             NSLog(@"task output closed");
         }];
     }
+
     __auto_type paths = [NSMutableArray array];
     for (NSDictionary* service in config[@"services"]) {
         NSString* binary = service[@"binary"];
         __auto_type path = [currentDir stringByAppendingPathComponent: binary];
         [paths addObject: path];
     }
+
     FSEventStreamContext ctx = { .info = (__bridge void*)tasks };
     __auto_type stream = FSEventStreamCreate(kCFAllocatorDefault,
                                              &fsCallback,
@@ -141,17 +137,17 @@ int main() {
                                              kFSEventStreamCreateFlagUseCFTypes|kFSEventStreamCreateFlagFileEvents);
     FSEventStreamSetDispatchQueue(stream, dispatch_get_main_queue());
     FSEventStreamStart(stream);
-    [NSTimer scheduledTimerWithTimeInterval: 60
-                                    repeats: NO
-                                      block: ^(NSTimer* timer) {
-        NSLog(@"timer fired");
-        terminate_tasks_and_exit(tasks, 0);
-    }];
-    sigintBlock = ^{
-        NSLog(@"SIGINT caught");
-        terminate_tasks_and_exit(tasks, 0);
-    };
-    signal(SIGINT, &sigintHandler);
+
+    signal(SIGINT, SIG_IGN);
+    __auto_type source = dispatch_source_create(DISPATCH_SOURCE_TYPE_SIGNAL, SIGINT, 0, dispatch_get_main_queue());
+    if (source != NULL) {
+        dispatch_source_set_event_handler(source, ^{
+            NSLog(@"SIGINT caught");
+            terminate_tasks_and_exit(tasks, 0);
+        });
+        dispatch_resume(source);
+    }
+
     [[NSRunLoop currentRunLoop] run];
 }
 
