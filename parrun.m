@@ -21,11 +21,9 @@ void fsCallback(ConstFSEventStreamRef stream,
     NSInteger i = 0;
     for (NSString* path in (__bridge NSArray*)paths) {
         if (flags[i] & kFSEventStreamEventFlagItemInodeMetaMod) {
-            NSLog(@"event: %@", path);
             __auto_type tasks = (__bridge NSMutableArray*)info;
             for (NSTask* task in tasks) {
                 if ([path isEqualToString: task.executableURL.path]) {
-                    NSLog(@"task found");
                     __auto_type start = [NSDate date];
                     [task terminate];
                     [task waitUntilExit];
@@ -121,10 +119,8 @@ int main() {
     }
 
     __auto_type paths = [NSMutableArray array];
-    for (NSDictionary* service in config[@"services"]) {
-        NSString* binary = service[@"binary"];
-        __auto_type path = [currentDir stringByAppendingPathComponent: binary];
-        [paths addObject: path];
+    for (NSTask * task in tasks) {
+        [paths addObject: task.executableURL.path];
     }
 
     FSEventStreamContext ctx = { .info = (__bridge void*)tasks };
